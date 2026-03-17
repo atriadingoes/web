@@ -123,6 +123,7 @@
         
         .progress {
             margin-top: 16px;
+            margin-bottom: 24px;
             height: 8px;
             background: #e2e8f0;
             border-radius: 4px;
@@ -248,13 +249,7 @@
             font-family: 'Monaco', 'Courier New', monospace;
         }
         
-        .domain-counter {
-            font-size: 12px;
-            color: #718096;
-            font-weight: 600;
-        }
-        
-        .loading-dots::after {
+        .current-domain-text::after {
             content: '';
             animation: dots 1.5s steps(4, end) infinite;
         }
@@ -264,6 +259,16 @@
             40% { content: '.'; }
             60% { content: '..'; }
             80%, 100% { content: '...'; }
+        }
+        
+        .domain-counter {
+            font-size: 12px;
+            color: #718096;
+            font-weight: 600;
+        }
+        
+        .loading-dots {
+            display: inline;
         }
         
         .spinner {
@@ -299,7 +304,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>🔍 Диагностика сети и блокировок!!</h1>
+        <h1>🔍 Диагностика сети и блокировок</h1>
         <p class="subtitle">Проверка доступности доменов и анализ блокировок оператора</p>
         
         <button id="startBtn" onclick="startDiagnostics()">Начать диагностику</button>
@@ -346,7 +351,7 @@
                 </div>
                 <div class="current-domain-display">
                     <span class="spinner"></span>
-                    <span class="current-domain-text" id="currentDomain"><span class="loading-dots">Подготовка</span></span>
+                    <span class="current-domain-text" id="currentDomain">Подготовка</span>
                     <span class="domain-counter" id="domainCounter">0 / 0</span>
                 </div>
             </div>
@@ -633,7 +638,9 @@
             displayDomainResults(domainResults, accessible, blocked);
             
             // Показываем завершение
-            document.getElementById('currentDomain').innerHTML = '✓ Проверка завершена';
+            const domainEl = document.getElementById('currentDomain');
+            domainEl.textContent = '✓ Проверка завершена';
+            domainEl.style.animation = 'none';
             const spinner = document.querySelector('.spinner');
             spinner.style.display = 'none';
         }
@@ -641,8 +648,7 @@
         let currentBatchIndex = 0;
         
         function updateCurrentDomain(domain, completed, total) {
-            const domainEl = document.getElementById('currentDomain');
-            domainEl.innerHTML = `<span class="loading-dots">${domain}</span>`;
+            document.getElementById('currentDomain').textContent = domain;
             document.getElementById('domainCounter').textContent = `${completed} / ${total}`;
             
             const percent = Math.round((completed / total) * 100);
