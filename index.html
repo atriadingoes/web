@@ -230,6 +230,7 @@
             align-items: center;
             gap: 10px;
             margin-top: 16px;
+            margin-bottom: 80px;
         }
         
         .current-domain-icon {
@@ -249,8 +250,8 @@
             font-family: 'Monaco', 'Courier New', monospace;
         }
         
-        .current-domain-text::after {
-            content: '';
+        .loading-dots {
+            display: inline-block;
             animation: dots 1.5s steps(4, end) infinite;
         }
         
@@ -259,6 +260,11 @@
             40% { content: '.'; }
             60% { content: '..'; }
             80%, 100% { content: '...'; }
+        }
+        
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
         }
         
         .domain-counter {
@@ -350,8 +356,10 @@
                     <div class="progress-bar-fill" id="domainProgressBar"></div>
                 </div>
                 <div class="current-domain-display">
-                    <span class="spinner"></span>
-                    <span class="current-domain-text" id="currentDomain">Подготовка</span>
+                    <span class="spinner" id="domainSpinner"></span>
+                    <span class="current-domain-text">
+                        <span id="currentDomain">Подготовка</span><span class="loading-dots" id="loadingDots"></span>
+                    </span>
                     <span class="domain-counter" id="domainCounter">0 / 0</span>
                 </div>
             </div>
@@ -639,16 +647,23 @@
             
             // Показываем завершение
             const domainEl = document.getElementById('currentDomain');
+            const dotsEl = document.getElementById('loadingDots');
+            const spinner = document.getElementById('domainSpinner');
+            
             domainEl.textContent = '✓ Проверка завершена';
-            domainEl.style.animation = 'none';
-            const spinner = document.querySelector('.spinner');
-            spinner.style.display = 'none';
+            if (dotsEl) dotsEl.style.display = 'none';
+            if (spinner) spinner.style.display = 'none';
         }
         
         let currentBatchIndex = 0;
         
         function updateCurrentDomain(domain, completed, total) {
-            document.getElementById('currentDomain').textContent = domain;
+            const domainEl = document.getElementById('currentDomain');
+            const dotsEl = document.getElementById('loadingDots');
+            
+            domainEl.textContent = domain;
+            if (dotsEl) dotsEl.style.display = 'inline-block';
+            
             document.getElementById('domainCounter').textContent = `${completed} / ${total}`;
             
             const percent = Math.round((completed / total) * 100);
