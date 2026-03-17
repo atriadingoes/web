@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Диагностика сети и блокировок</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #2d3748;
+            margin-bottom: 8px;
+            font-size: 24px;
+        }
+        
+        .subtitle {
+            color: #718096;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+        
+        .section {
+            margin-bottom: 24px;
+            padding: 16px;
+            background: #f7fafc;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .section-title {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        
+        .test-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .test-item:last-child {
+            border-bottom: none;
+        }
+        
+        .test-name {
+            flex: 1;
+            color: #4a5568;
+            font-size: 14px;
+        }
+        
+        .test-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .status-fail {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        
+        .status-pending {
+            background: #feebc8;
+            color: #7c2d12;
+        }
+        
+        .status-info {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+        
+        button {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .progress {
+            margin-top: 16px;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            width: 0%;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+        
+        .info-card {
+            padding: 12px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .info-label {
+            font-size: 11px;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        
+        .info-value {
+            font-size: 14px;
+            color: #2d3748;
+            font-weight: 600;
+            word-break: break-all;
+        }
+        
+        .domain-list {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 12px;
+        }
+        
+        .help-text {
+            color: #718096;
+            font-size: 13px;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+        
+        .progress-section {
+            margin: 16px 0;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .progress-label {
+            font-size: 14px;
+            color: #4a5568;
+            font-weight: 600;
+        }
+        
+        .progress-percent {
+            font-size: 18px;
+            color: #667eea;
+            font-weight: 700;
+        }
+        
+        .progress-bar-container {
+            height: 12px;
+            background: #e2e8f0;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        
+        .current-domain-display {
+            padding: 12px;
+            background: #f7fafc;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        
+        .current-domain-icon {
+            font-size: 16px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .current-domain-text {
+            flex: 1;
+            font-size: 13px;
+            color: #2d3748;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+        
+        .domain-counter {
+            font-size: 12px;
+            color: #718096;
+            font-weight: 600;
+        }
+        
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #e2e8f0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        .domain-item {
+            padding: 6px 12px;
+            margin: 4px 0;
+            background: white;
+            border-radius: 4px;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .export-btn {
+            margin-top: 16px;
+            background: #48bb78;
+        }
+        
+        .export-btn:hover {
+            background: #38a169;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Диагностика сети и блокировок</h1>
+        <p class="subtitle">Проверка доступности доменов и анализ блокировок оператора</p>
+        
+        <button id="startBtn" onclick="startDiagnostics()">Начать диагностику</button>
+        <div class="progress" id="progress" style="display:none;">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        
+        <!-- Информация о клиенте -->
+        <div class="section" id="clientInfo" style="display:none;">
+            <div class="section-title">📱 Информация о клиенте</div>
+            <p class="help-text">
+                Собираем информацию о вашем подключении: IP адрес, тип сети (4G/5G), скорость и задержку. 
+                Это поможет понять характеристики вашего мобильного интернета.
+            </p>
+            <div class="info-grid" id="clientInfoGrid"></div>
+        </div>
+        
+        <!-- Проверка сети -->
+        <div class="section" id="networkCheck" style="display:none;">
+            <div class="section-title">🌐 Диагностика блокировок оператора</div>
+            <p class="help-text">
+                Проверяем какие протоколы блокирует ваш оператор. HTTP/2 обязателен для Reality протокола. 
+                Блокировка WebSocket или UDP может влиять на работу других VPN протоколов (Shadowsocks, WireGuard).
+            </p>
+            <div id="networkTests"></div>
+        </div>
+        
+        <!-- Проверка доменов -->
+        <div class="section" id="domainCheck" style="display:none;">
+            <div class="section-title">📋 Проверка доступности SNI доменов</div>
+            <p class="help-text">
+                Проверяем какие домены из whitelist доступны с вашего мобильного интернета. 
+                Доступные домены можно использовать как SNI для Reality протокола. 
+                Проверка идет параллельно батчами по 30 доменов для ускорения.
+            </p>
+            <div id="domainStats"></div>
+            <div class="progress-section" id="domainProgress" style="display:none;">
+                <div class="progress-stats">
+                    <span class="progress-label">Проверка доменов</span>
+                    <span class="progress-percent" id="domainPercent">0%</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="domainProgressBar"></div>
+                </div>
+                <div class="current-domain-display">
+                    <span class="spinner"></span>
+                    <span class="current-domain-text" id="currentDomain"><span class="loading-dots">Подготовка</span></span>
+                    <span class="domain-counter" id="domainCounter">0 / 0</span>
+                </div>
+            </div>
+            <div class="domain-list" id="domainList"></div>
+        </div>
+        
+        <!-- Экспорт результатов -->
+        <button class="export-btn" id="exportBtn" style="display:none;" onclick="exportResults()">
+            📥 Экспортировать результаты
+        </button>
+    </div>
+
+    <script>
+        const SERVER_IP = '185.125.100.216';
+        const SERVER_DOMAIN = '3.devwater.ru';
+        const SERVER_PORT = 2053;
+        
+        let diagnosticsResults = {
+            timestamp: new Date().toISOString(),
+            clientInfo: {},
+            infraTests: {},
+            networkTests: {},
+            domainTests: {}
+        };
+        
+        // Список Reality-совместимых доменов (будет загружен с сервера)
+        let DOMAINS_TO_TEST = [];
+        
+        async function startDiagnostics() {
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('startBtn').textContent = 'Загрузка списка доменов...';
+            document.getElementById('progress').style.display = 'block';
+            
+            // Загружаем список Reality-совместимых доменов
+            const loaded = await loadDomainList();
+            if (!loaded) {
+                alert('Ошибка загрузки списка доменов. Используется резервный список.');
+                DOMAINS_TO_TEST = [
+                    'mail.ru', 'yandex.ru', 'vk.ru', 'sberbank.ru', 'ozon.ru',
+                    'wb.ru', 'ok.ru', 'dzen.ru', 'rutube.ru', 'kinopoisk.ru'
+                ];
+            }
+            
+            document.getElementById('startBtn').textContent = 'Выполняется диагностика...';
+            
+            await collectClientInfo();
+            await checkInfrastructure();
+            await checkNetworkCapabilities();
+            await checkDomains();
+            
+            document.getElementById('exportBtn').style.display = 'block';
+            document.getElementById('startBtn').textContent = '✅ Диагностика завершена';
+            updateProgress(100);
+        }
+        
+        async function loadDomainList() {
+            try {
+                // Загружаем whitelist напрямую из GitHub
+                const response = await fetch('https://raw.githubusercontent.com/hxehex/russia-mobile-internet-whitelist/main/whitelist.txt');
+                if (response.ok) {
+                    const text = await response.text();
+                    DOMAINS_TO_TEST = text.split('\n')
+                        .map(d => d.trim())
+                        .filter(d => d && !d.startsWith('#'));
+                    
+                    console.log(`Загружено ${DOMAINS_TO_TEST.length} доменов из GitHub`);
+                    return true;
+                }
+            } catch (e) {
+                console.error('Ошибка загрузки списка:', e);
+            }
+            return false;
+        }
+        
+
+        function updateProgress(percent) {
+            document.getElementById('progressBar').style.width = percent + '%';
+        }
+        
+        async function collectClientInfo() {
+            document.getElementById('clientInfo').style.display = 'block';
+            updateProgress(10);
+            
+            const info = {};
+            
+            // User Agent
+            info.userAgent = navigator.userAgent;
+            info.platform = navigator.platform;
+            info.language = navigator.language;
+            
+            // Network Information API
+            if ('connection' in navigator) {
+                const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                info.connectionType = conn.effectiveType || 'unknown';
+                info.downlink = conn.downlink ? conn.downlink + ' Mbps' : 'unknown';
+                info.rtt = conn.rtt ? conn.rtt + ' ms' : 'unknown';
+                info.saveData = conn.saveData ? 'Да' : 'Нет';
+            }
+            
+            // Battery
+            if ('getBattery' in navigator) {
+                try {
+                    const battery = await navigator.getBattery();
+                    info.battery = Math.round(battery.level * 100) + '%';
+                    info.charging = battery.charging ? 'Да' : 'Нет';
+                } catch (e) {
+                    info.battery = 'N/A';
+                }
+            }
+            
+            // Public IP через API
+            try {
+                const ipResponse = await fetch('https://api.ipify.org?format=json', { timeout: 5000 });
+                const ipData = await ipResponse.json();
+                info.publicIP = ipData.ip;
+            } catch (e) {
+                info.publicIP = 'Не удалось получить';
+            }
+            
+            // WebRTC local IP
+            try {
+                const localIP = await getLocalIP();
+                info.localIP = localIP;
+            } catch (e) {
+                info.localIP = 'N/A';
+            }
+            
+            diagnosticsResults.clientInfo = info;
+            displayClientInfo(info);
+        }
+        
+        function getLocalIP() {
+            return new Promise((resolve) => {
+                const pc = new RTCPeerConnection({ iceServers: [] });
+                pc.createDataChannel('');
+                pc.createOffer().then(offer => pc.setLocalDescription(offer));
+                
+                pc.onicecandidate = (ice) => {
+                    if (!ice || !ice.candidate || !ice.candidate.candidate) return;
+                    const ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3})/;
+                    const match = ipRegex.exec(ice.candidate.candidate);
+                    if (match) {
+                        pc.close();
+                        resolve(match[1]);
+                    }
+                };
+                
+                setTimeout(() => resolve('N/A'), 3000);
+            });
+        }
+        
+        function displayClientInfo(info) {
+            const grid = document.getElementById('clientInfoGrid');
+            grid.innerHTML = '';
+            
+            const fields = [
+                { label: 'Публичный IP', value: info.publicIP },
+                { label: 'Локальный IP', value: info.localIP },
+                { label: 'Тип сети', value: info.connectionType },
+                { label: 'Скорость', value: info.downlink },
+                { label: 'RTT', value: info.rtt },
+                { label: 'Заряд', value: info.battery },
+                { label: 'Платформа', value: info.platform },
+                { label: 'Язык', value: info.language }
+            ];
+            
+            fields.forEach(field => {
+                if (field.value) {
+                    grid.innerHTML += `
+                        <div class="info-card">
+                            <div class="info-label">${field.label}</div>
+                            <div class="info-value">${field.value}</div>
+                        </div>
+                    `;
+                }
+            });
+        }
+        
+        async function checkInfrastructure() {
+            // Пропускаем проверку инфраструктуры
+            updateProgress(30);
+        }
+        
+        async function checkNetworkCapabilities() {
+            document.getElementById('networkCheck').style.display = 'block';
+            updateProgress(50);
+            
+            const tests = [];
+            
+            // HTTP/2 поддержка
+            tests.push({
+                name: 'HTTP/2 поддержка',
+                test: async () => {
+                    try {
+                        await fetch('https://mail.yandex.ru');
+                        const entries = performance.getEntriesByType('resource');
+                        const lastEntry = entries[entries.length - 1];
+                        return lastEntry.nextHopProtocol === 'h2' || lastEntry.nextHopProtocol === 'h3';
+                    } catch {
+                        return false;
+                    }
+                }
+            });
+            
+            // WebSocket поддержка
+            tests.push({
+                name: 'WebSocket поддержка',
+                test: () => testWebSocket(`wss://${SERVER_DOMAIN}:${SERVER_PORT}`)
+            });
+            
+            // DNS резолвинг
+            tests.push({
+                name: 'DNS через Cloudflare',
+                test: async () => {
+                    try {
+                        const response = await fetch('https://cloudflare-dns.com/dns-query?name=mail.yandex.ru&type=A', {
+                            headers: { 'Accept': 'application/dns-json' }
+                        });
+                        const data = await response.json();
+                        return data.Answer && data.Answer.length > 0;
+                    } catch {
+                        return false;
+                    }
+                }
+            });
+            
+            // STUN сервер (UDP)
+            tests.push({
+                name: 'UDP/STUN доступность',
+                test: () => testSTUN()
+            });
+            
+            const results = await runTests(tests);
+            diagnosticsResults.networkTests = results;
+            displayTests('networkTests', results);
+        }
+        
+        async function checkDomains() {
+            document.getElementById('domainCheck').style.display = 'block';
+            document.getElementById('domainProgress').style.display = 'block';
+            updateProgress(70);
+            
+            const domainResults = [];
+            let accessible = 0;
+            let blocked = 0;
+            let completed = 0;
+            const total = DOMAINS_TO_TEST.length;
+            const batchSize = 30; // Параллельная проверка 30 доменов
+            
+            // Разбиваем на батчи
+            for (let i = 0; i < total; i += batchSize) {
+                const batch = DOMAINS_TO_TEST.slice(i, i + batchSize);
+                
+                // Проверяем батч параллельно
+                const batchPromises = batch.map((domain, idx) => {
+                    return testDomainAccessibility(domain).then(result => {
+                        completed++;
+                        updateCurrentDomain(domain, completed, total);
+                        
+                        if (result.success) accessible++;
+                        else blocked++;
+                        
+                        updateDomainStats(accessible, blocked, completed, total);
+                        return { domain, result };
+                    });
+                });
+                
+                const batchResults = await Promise.all(batchPromises);
+                
+                // Сохраняем результаты
+                batchResults.forEach(({ domain, result }) => {
+                    domainResults.push({
+                        domain: domain,
+                        accessible: result,
+                        timing: result.timing || 0
+                    });
+                });
+                
+                // Обновляем прогресс
+                updateProgress(70 + (completed / total) * 30);
+            }
+            
+            diagnosticsResults.domainTests = domainResults;
+            displayDomainResults(domainResults, accessible, blocked);
+            
+            // Показываем завершение
+            document.getElementById('currentDomain').innerHTML = '✓ Проверка завершена';
+            const spinner = document.querySelector('.spinner');
+            spinner.style.display = 'none';
+        }
+        
+        let currentBatchIndex = 0;
+        
+        function updateCurrentDomain(domain, completed, total) {
+            const domainEl = document.getElementById('currentDomain');
+            domainEl.innerHTML = `<span class="loading-dots">${domain}</span>`;
+            document.getElementById('domainCounter').textContent = `${completed} / ${total}`;
+            
+            const percent = Math.round((completed / total) * 100);
+            document.getElementById('domainPercent').textContent = percent + '%';
+            document.getElementById('domainProgressBar').style.width = percent + '%';
+        }
+        
+        function updateDomainStats(accessible, blocked, completed, total) {
+            const stats = document.getElementById('domainStats');
+            const percent = Math.round((accessible / completed) * 100);
+            
+            stats.innerHTML = `
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="info-label">Проверено</div>
+                        <div class="info-value">${completed} / ${total}</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Доступно</div>
+                        <div class="info-value" style="color: #22543d;">${accessible}</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Заблокировано</div>
+                        <div class="info-value" style="color: #742a2a;">${blocked}</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Доступность</div>
+                        <div class="info-value">${percent}%</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+
+        
+        async function testDomainAccessibility(domain) {
+            // Проверка через Image (обходит CORS)
+            return new Promise((resolve) => {
+                const start = Date.now();
+                const img = new Image();
+                const timeout = setTimeout(() => {
+                    img.src = '';
+                    resolve({ success: false, timing: 5000 });
+                }, 5000);
+                
+                img.onload = () => {
+                    clearTimeout(timeout);
+                    resolve({ success: true, timing: Date.now() - start });
+                };
+                
+                img.onerror = () => {
+                    clearTimeout(timeout);
+                    const timing = Date.now() - start;
+                    // Если быстрая ошибка (< 100ms) - возможно CORS, но домен доступен
+                    // Если медленная (> 3000ms) - скорее всего блокировка
+                    resolve({ success: timing < 3000, timing: timing });
+                };
+                
+                img.src = `https://${domain}/favicon.ico?t=${Date.now()}`;
+            });
+        }
+        
+        async function testWebSocket(url) {
+            return new Promise((resolve) => {
+                const timeout = setTimeout(() => resolve(false), 5000);
+                
+                try {
+                    const ws = new WebSocket(url);
+                    ws.onopen = () => {
+                        clearTimeout(timeout);
+                        ws.close();
+                        resolve(true);
+                    };
+                    ws.onerror = () => {
+                        clearTimeout(timeout);
+                        resolve(false);
+                    };
+                } catch {
+                    clearTimeout(timeout);
+                    resolve(false);
+                }
+            });
+        }
+        
+        async function testSTUN() {
+            return new Promise((resolve) => {
+                try {
+                    const pc = new RTCPeerConnection({
+                        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                    });
+                    
+                    pc.createDataChannel('test');
+                    pc.createOffer().then(offer => pc.setLocalDescription(offer));
+                    
+                    const timeout = setTimeout(() => {
+                        pc.close();
+                        resolve(false);
+                    }, 5000);
+                    
+                    pc.onicecandidate = (ice) => {
+                        if (ice && ice.candidate) {
+                            clearTimeout(timeout);
+                            pc.close();
+                            resolve(true);
+                        }
+                    };
+                } catch {
+                    resolve(false);
+                }
+            });
+        }
+        
+        async function runTests(tests) {
+            const results = [];
+            for (const test of tests) {
+                const result = await test.test();
+                results.push({
+                    name: test.name,
+                    ...result
+                });
+            }
+            return results;
+        }
+        
+        function displayTests(containerId, results) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            results.forEach(result => {
+                const statusClass = result.success ? 'status-success' : 'status-fail';
+                const statusText = result.success ? '✓ Доступно' : '✗ Заблокировано';
+                const timing = result.timing ? ` (${result.timing}ms)` : '';
+                const info = result.info ? `<br><small style="color: #718096;">${result.info}</small>` : '';
+                
+                container.innerHTML += `
+                    <div class="test-item">
+                        <div class="test-name">${result.name}${timing}${info}</div>
+                        <div class="test-status ${statusClass}">${statusText}</div>
+                    </div>
+                `;
+            });
+        }
+        
+        function displayDomainResults(results, accessible, blocked) {
+            const stats = document.getElementById('domainStats');
+            const total = accessible + blocked;
+            const percent = Math.round((accessible / total) * 100);
+            
+            stats.innerHTML = `
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="info-label">Всего проверено</div>
+                        <div class="info-value">${total}</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Доступно</div>
+                        <div class="info-value" style="color: #22543d;">${accessible}</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Заблокировано</div>
+                        <div class="info-value" style="color: #742a2a;">${blocked}</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Процент доступности</div>
+                        <div class="info-value">${percent}%</div>
+                    </div>
+                </div>
+            `;
+            
+            const list = document.getElementById('domainList');
+            list.innerHTML = '';
+            
+            // Сортируем: доступные сначала
+            results.sort((a, b) => {
+                if (a.accessible.success && !b.accessible.success) return -1;
+                if (!a.accessible.success && b.accessible.success) return 1;
+                return a.accessible.timing - b.accessible.timing;
+            });
+            
+            results.forEach(result => {
+                const statusClass = result.accessible.success ? 'status-success' : 'status-fail';
+                const statusText = result.accessible.success ? '✓' : '✗';
+                const timing = result.accessible.timing + 'ms';
+                
+                list.innerHTML += `
+                    <div class="domain-item">
+                        <span>${result.domain}</span>
+                        <span>
+                            <span style="color: #718096; font-size: 11px; margin-right: 8px;">${timing}</span>
+                            <span class="test-status ${statusClass}">${statusText}</span>
+                        </span>
+                    </div>
+                `;
+            });
+        }
+        
+        function exportResults() {
+            const results = JSON.stringify(diagnosticsResults, null, 2);
+            const blob = new Blob([results], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `network-diagnostics-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
